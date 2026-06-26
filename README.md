@@ -59,6 +59,19 @@ Noisy Point Cloud (2048x6)
 
 ---
 
+## Figures
+
+### Training Convergence
+![Training Loss](fig_training_loss.png)
+
+### Token Budget vs GPU Memory
+![Token Limits](fig_token_limit.png)
+
+### Model Architecture
+![Architecture](fig_architecture.png)
+
+---
+
 ## Citation (IEEE)
 
 ```bibtex
