@@ -1,0 +1,33 @@
+# ============================================================
+# BPT Clothing Mesh Fine-Tuning - Dependency List
+# Verified working versions (2026-05-20)
+# Python 3.10+ | CUDA 11.8 or 12.1
+#
+# Install PyTorch FIRST for your CUDA version:
+#   pip install torch>=2.0.0 torchvision>=0.15.0 --index-url https://download.pytorch.org/whl/cu118
+# Then:
+#   pip install -r requirements_cloud.txt
+# ============================================================
+
+# BPT model dependencies (exact versions verified)
+x-transformers==1.26.6
+pytorch-custom-utils==0.0.21
+vector-quantize-pytorch==1.12.8
+einops>=0.7.0
+beartype
+
+# Utilities
+tqdm
+numpy==1.26.4
+PyYAML>=6.0
+trimesh>=4.0
+scipy>=1.10
+matplotlib
+
+# Michelangelo encoder dependencies
+scikit-image
+omegaconf
+
+# Cloud training extras (optional)
+deepspeed>=0.14.0
+accelerate>=0.25.0

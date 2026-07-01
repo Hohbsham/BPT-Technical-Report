@@ -1,0 +1,51 @@
+# Data - too large
+supervised_data/
+supervised_data_excluded/
+supervised_data_other_excluded/
+test_set/
+ClothesNetM/
+Other_clothes/
+
+# Model weights & embeddings - large binary files
+bpt/weights/
+bpt/cached_embeddings/
+bpt/checkpoints/
+bpt/miche/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Inspection renders - generated
+inspection_renders/
+inspection_qwen_results.json
+inspection_progress.json
+
+# Logs
+*.log
+bpt/*.log
+chat-platform/*.log
+
+# Claude internal
+.claude/
+plans/
+
+# Temp files
+qr_batch_progress.json
+qr_batch/
+*.zip
+*.tar.gz
+test_api_key.py
+test_check.py
+test_inspect.py
+create_shortcut.ps1
+run_qwen_check.bat
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+deploy*
+h20_part*

@@ -1,0 +1,73 @@
+{
+  "specialists": [
+    {
+      "name": "LearnMaster",
+      "role": "AI面试学习管家 / 总调度官",
+      "capabilities": ["task_orchestration", "progress_tracking", "question_generation", "difficulty_adjustment"],
+      "launch": "python agent.py auto --name LearnMaster --role \"AI面试学习管家\" --capabilities task_orchestration,progress_tracking,question_generation,difficulty_adjustment --auto-reply --poll-interval 5",
+      "prompt_file": "learning_agents.json#orchestrator"
+    },
+    {
+      "name": "CodeJudge",
+      "role": "算法题裁判 / 代码审查官",
+      "capabilities": ["algorithm_judge", "code_review", "complexity_analysis", "test_case_gen"],
+      "launch": "python agent.py auto --name CodeJudge --role \"算法题裁判\" --capabilities algorithm_judge,code_review,complexity_analysis,test_case_gen --auto-reply --poll-interval 5",
+      "prompt_file": "learning_agents.json#specialists.0"
+    },
+    {
+      "name": "ModelExpert",
+      "role": "PyTorch模型手撕导师 / 架构讲解师",
+      "capabilities": ["pytorch_review", "model_architecture", "dimension_check", "principle_questioning"],
+      "launch": "python agent.py auto --name ModelExpert --role \"模型手撕导师\" --capabilities pytorch_review,model_architecture,dimension_check,principle_questioning --auto-reply --poll-interval 5",
+      "prompt_file": "learning_agents.json#specialists.1"
+    },
+    {
+      "name": "InterviewCoach",
+      "role": "八股知识考官 / 面试官模拟器",
+      "capabilities": ["knowledge_questioning", "depth_scoring", "interview_simulation", "gap_analysis"],
+      "launch": "python agent.py auto --name InterviewCoach --role \"八股考官\" --capabilities knowledge_questioning,depth_scoring,interview_simulation,gap_analysis --auto-reply --poll-interval 5",
+      "prompt_file": "learning_agents.json#specialists.2"
+    },
+    {
+      "name": "Claude-Reviewer",
+      "role": "Academic Paper Reviewer & Editor",
+      "capabilities": ["paper_review", "academic_writing", "logic_check", "structure_analysis", "methodology_review"],
+      "launch": "python agent.py auto --name Claude-Reviewer --role \"...\" --capabilities paper_review,... --auto-reply --poll-interval 10"
+    },
+    {
+      "name": "Claude-Scorer",
+      "role": "AI-Detection & Academic Style Compliance Scorer",
+      "capabilities": ["ai_detection", "style_analysis", "academic_compliance", "pattern_recognition", "text_forensics"],
+      "launch": "python agent.py auto --name Claude-Scorer --role \"...\" --capabilities ai_detection,... --auto-reply --poll-interval 10"
+    },
+    {
+      "name": "Claude",
+      "role": "Senior Code Reviewer",
+      "capabilities": ["code_review", "file_edit", "shell_exec"],
+      "launch": "python agent.py auto --name Claude --role \"...\" --capabilities code_review,... --auto-reply --poll-interval 10"
+    },
+    {
+      "name": "Cursor",
+      "role": "Full-Stack Developer & Debugger",
+      "capabilities": ["code_generation", "debugging", "refactoring"],
+      "launch": "python agent.py auto --name Cursor --role \"...\" --capabilities code_generation,... --auto-reply --poll-interval 10"
+    },
+    {
+      "name": "BPT-AutoResearch",
+      "role": "BPT AutoResearch Pipeline Agent",
+      "capabilities": ["bpt_training", "mesh_eval", "auto_decision", "training_monitor", "code_review", "shell_exec"],
+      "launch": "python autoresearch_agent.py auto --name BPT-AutoResearch --auto-reply --poll-interval 10"
+    },
+    {
+      "name": "BPTtrain",
+      "role": "BPT Training Monitor & Weekly Report Coordinator",
+      "capabilities": ["dataset_inspection", "mesh_quality_check", "qwen_vision", "blender_render", "report_generation", "progress_tracking", "notification", "training_monitor"],
+      "launch": "python agent.py auto --name BPTtrain --role \"BPT训练监控/数据集质检/周报协调\" --capabilities dataset_inspection,mesh_quality_check,qwen_vision,blender_render,report_generation,progress_tracking,notification,training_monitor --auto-reply --poll-interval 30"
+    }
+  ],
+  "manager": {
+    "name": "OpenClaw",
+    "role": "Agent Orchestrator & User Proxy",
+    "instructions": "Monitor chat messages. When user sends a request, parse intent via AI, check which specialists are online, create tasks with matching capabilities, wait for results, then report back to the user."
+  }
+}

@@ -1,0 +1,15 @@
+{"time": "2026-06-08 11:27", "vram": "82979 MiB", "processes": "6", "loss": "loss=9.0661", "epochs": "none", "errors": "0", "nan_count": "0", "complete": "0", "checkpoints": "0"}
+{"time": "2026-06-08 13:37", "vram": "82979 MiB", "processes": "6", "loss": "loss=9.3660", "epochs": "none", "errors": "0", "nan_count": "0", "complete": "0", "checkpoints": "0"}
+{"time": "2026-06-08 14:46", "vram": "79073 MiB", "processes": "6", "loss": "none", "epochs": "none", "errors": "0", "nan_count": "1", "complete": "0", "checkpoints": "1"}
+{"time": "2026-06-08 15:16", "vram": "30231 MiB", "processes": "6", "loss": "loss=7.8603", "epochs": "none", "errors": "0", "nan_count": "0", "complete": "0", "checkpoints": "0"}
+{"time": "2026-06-08 15:46", "vram": "58231 MiB", "processes": "6", "loss": "loss=11.2145", "epochs": "none", "errors": "0", "nan_count": "0", "complete": "0", "checkpoints": "0"}
+{"time": "2026-06-08 16:16", "vram": "63621 MiB", "processes": "6", "loss": "loss=7.9109", "epochs": "none", "errors": "0", "nan_count": "1", "complete": "0", "checkpoints": "0"}
+{"time": "2026-06-08 17:16", "vram": "57485 MiB", "processes": "6", "loss": "loss=8.0156", "epochs": "none", "errors": "0", "nan_count": "1", "complete": "0", "checkpoints": "0"}
+{"time": "2026-06-08 17:46", "vram": "30831 MiB", "processes": "6", "loss": "loss=7.8888", "epochs": "none", "errors": "0", "nan_count": "1", "complete": "0", "checkpoints": "0"}
+{"time": "2026-06-08 18:16", "vram": "82979 MiB", "processes": "6", "loss": "loss=8.2496", "epochs": "none", "errors": "0", "nan_count": "1", "complete": "0", "checkpoints": "0"}
+{"time": "2026-06-08 19:47", "vram": "83081 MiB", "processes": "6", "loss": "loss=10.1417", "epochs": "none", "errors": "0", "nan_count": "0", "complete": "0", "checkpoints": "0"}
+{"time": "2026-06-09 10:46", "vram": "83035 MiB", "processes": "6", "loss": "loss=8.4412", "epochs": "none", "errors": "0", "nan_count": "1", "complete": "0", "checkpoints": "0"}
+{"time": "2026-06-09 11:46", "vram": "72911 MiB", "processes": "6", "loss": "loss=14.1830", "epochs": "none", "errors": "0", "nan_count": "0", "complete": "0", "checkpoints": "0"}
+{"time": "2026-06-09 12:16", "vram": "72911 MiB", "processes": "6", "loss": "loss=8.1960", "epochs": "none", "errors": "0", "nan_count": "0", "complete": "0", "checkpoints": "0"}
+{"time": "2026-06-09 12:46", "vram": "78545 MiB", "processes": "6", "loss": "loss=7.7314", "epochs": "none", "errors": "0", "nan_count": "0", "complete": "0", "checkpoints": "0"}
+{"time": "2026-06-09 13:16", "vram": "79799 MiB", "processes": "6", "loss": "loss=7.7197", "epochs": "none", "errors": "0", "nan_count": "0", "complete": "0", "checkpoints": "0"}
