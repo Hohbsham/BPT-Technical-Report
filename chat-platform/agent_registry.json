@@ -32,37 +32,31 @@
       "name": "Claude-Reviewer",
       "role": "Academic Paper Reviewer & Editor",
       "capabilities": ["paper_review", "academic_writing", "logic_check", "structure_analysis", "methodology_review"],
-      "launch": "python agent.py auto --name Claude-Reviewer --role \"...\" --capabilities paper_review,... --auto-reply --poll-interval 10"
+      "launch": "python agent.py auto --name Claude-Reviewer --role \"Academic Reviewer\" --capabilities paper_review,academic_writing,logic_check,structure_analysis,methodology_review --auto-reply --poll-interval 10"
     },
     {
       "name": "Claude-Scorer",
       "role": "AI-Detection & Academic Style Compliance Scorer",
       "capabilities": ["ai_detection", "style_analysis", "academic_compliance", "pattern_recognition", "text_forensics"],
-      "launch": "python agent.py auto --name Claude-Scorer --role \"...\" --capabilities ai_detection,... --auto-reply --poll-interval 10"
-    },
-    {
-      "name": "Claude",
-      "role": "Senior Code Reviewer",
-      "capabilities": ["code_review", "file_edit", "shell_exec"],
-      "launch": "python agent.py auto --name Claude --role \"...\" --capabilities code_review,... --auto-reply --poll-interval 10"
+      "launch": "python agent.py auto --name Claude-Scorer --role \"AI Detection Scorer\" --capabilities ai_detection,style_analysis,academic_compliance,pattern_recognition,text_forensics --auto-reply --poll-interval 10"
     },
     {
       "name": "Cursor",
       "role": "Full-Stack Developer & Debugger",
       "capabilities": ["code_generation", "debugging", "refactoring"],
-      "launch": "python agent.py auto --name Cursor --role \"...\" --capabilities code_generation,... --auto-reply --poll-interval 10"
-    },
-    {
-      "name": "BPT-AutoResearch",
-      "role": "BPT AutoResearch Pipeline Agent",
-      "capabilities": ["bpt_training", "mesh_eval", "auto_decision", "training_monitor", "code_review", "shell_exec"],
-      "launch": "python autoresearch_agent.py auto --name BPT-AutoResearch --auto-reply --poll-interval 10"
+      "launch": "python agent.py auto --name Cursor --role \"Full-Stack Developer\" --capabilities code_generation,debugging,refactoring --auto-reply --poll-interval 10"
     },
     {
       "name": "BPTtrain",
-      "role": "BPT Training Monitor & Weekly Report Coordinator",
-      "capabilities": ["dataset_inspection", "mesh_quality_check", "qwen_vision", "blender_render", "report_generation", "progress_tracking", "notification", "training_monitor"],
-      "launch": "python agent.py auto --name BPTtrain --role \"BPT训练监控/数据集质检/周报协调\" --capabilities dataset_inspection,mesh_quality_check,qwen_vision,blender_render,report_generation,progress_tracking,notification,training_monitor --auto-reply --poll-interval 30"
+      "role": "BPT Training Monitor & Reporter",
+      "capabilities": ["training_monitor", "mesh_eval", "report_generation", "architecture_design", "dataset_inspection", "code_review", "progress_tracking", "debugging"],
+      "launch": "python agent.py auto --name BPTtrain --role \"BPT训练监控/网格评估/报告生成\" --capabilities training_monitor,mesh_eval,report_generation,architecture_design,dataset_inspection,code_review,progress_tracking,debugging --auto-reply --poll-interval 10"
+    },
+    {
+      "name": "BPT_Data_Check",
+      "role": "BPT Data Quality Inspector",
+      "capabilities": ["dataset_inspection", "mesh_quality_check", "data_cleaning", "quad_check", "kp_extract", "boundary_extract", "report_generation", "progress_tracking"],
+      "launch": "python agent.py auto --name BPT_Data_Check --role \"数据质检/Quad验证/Keypoint提取\" --capabilities dataset_inspection,mesh_quality_check,data_cleaning,quad_check,kp_extract,boundary_extract,report_generation,progress_tracking --auto-reply --poll-interval 10"
     }
   ],
   "manager": {

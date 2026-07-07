@@ -236,6 +236,7 @@ def main():
     p.add_argument("--output", default=None, help="Save results to JSON file")
     p.add_argument("--category", default=None, help="Run only specific category")
     p.add_argument("--quick", action="store_true", help="Reduce wait times for quick check")
+    p.add_argument("--evaluate-quality", action="store_true", help="Score agent output quality after each benchmark task")
     args = p.parse_args()
 
     global HOST
@@ -258,15 +259,34 @@ def main():
     to_run = [t for t in all_tasks if not args.category or t["category"] == args.category]
     print(f"\nRunning {len(to_run)} benchmark scenarios...\n")
 
+    quality_scores = {} if args.evaluate_quality else None
+
     results = []
     for i, task in enumerate(to_run):
         print(f"  [{i+1}/{len(to_run)}] {task['name']:45s} ... ", end="", flush=True)
         r = evaluate_task(task)
+        if args.evaluate_quality and r.get("passed"):
+            # Try to fetch quality evaluation for completed tasks
+            try:
+                task_id = r.get("details", "").split(" ")[0]  # approximate
+                evals = api("GET", f"/api/evaluations?limit=3")
+                if isinstance(evals, list) and evals:
+                    latest = evals[0]
+                    r["quality_score"] = latest.get("scores", {}).get("overall", None)
+                    r["quality_domain"] = latest.get("domain", "")
+                    if r["quality_score"]:
+                        quality_scores[task.get("id", str(i))] = r["quality_score"]
+            except Exception:
+                pass
         results.append(r)
-        print("✅" if r["passed"] else f"❌ ({len(r['errors'])} errors)")
+        extra = f" [q: {r.get('quality_score','?')}/5]" if r.get("quality_score") else ""
+        print("✅" if r["passed"] else f"❌ ({len(r['errors'])} errors)" + extra)
 
     # Report
     summary = print_report(results)
+    if quality_scores:
+        avg_q = round(sum(quality_scores.values()) / len(quality_scores), 2) if quality_scores else 0
+        print(f"\n  📊 Average Quality Score: {avg_q}/5.0 ({len(quality_scores)} tasks evaluated)")
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:

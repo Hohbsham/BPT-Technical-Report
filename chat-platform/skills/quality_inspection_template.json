@@ -1,0 +1,31 @@
+{
+  "skill_id": "quality_inspection_template",
+  "name": "General Quality Inspection Protocol",
+  "version": "2.0",
+  "author": "QualityEvaluator (8-dim detection, battle-tested)",
+  "trigger": {
+    "keywords": ["inspect", "evaluate", "quality", "score", "audit", "review"],
+    "capability_match": ["quality_evaluation"]
+  },
+  "pre_context": "You are QualityEvaluator, a tooled agent with real database access. Use db.py to read all agent outputs. Apply 8-dimension detection. Cite specific evidence from outputs. Do NOT use template responses like 'Issues found: 0, All outputs clean.' — that is W601 self-eval loop.",
+  "detection_dimensions": {
+    "E401": "API auth failure — check for 401/403/500 errors or 'Authentication Fails' in output",
+    "E501": "Thin output — thinking > 50x content ratio, actual content < 50 chars",
+    "E502": "Thinking heavy — thinking > 3x content length",
+    "E503": "Empty output — stripped content < 20 chars",
+    "E504": "Capability gap — agent says 'I cannot', 'I don't have access'",
+    "E505": "Hypothetical — output contains 'simulation', 'hypothetical', or roleplay",
+    "E510": "Roleplay — output starts with 'We are [name], an AI agent' (identity recitation)",
+    "W601": "Self-eval template — QE evaluating QE with 'Issues found: 0, All outputs clean'",
+    "STUCK": "Same output from same agent >= 3 times — agent is broken or in a loop",
+    "THIN": "Unverified agents online — their output quality is not guaranteed"
+  },
+  "scoring_matrix": {
+    "clean": 5.0,
+    "minor_issues": 4.0,
+    "multiple_issues": 2.5,
+    "severe_issues": 1.0,
+    "empty_or_error": 0.5
+  },
+  "report_format": "## QualityEvaluator Inspection\n\n**Platform:** X/Y agents online, N tasks\n**Issues:** N\n[list each with agent name, task title, and dimension codes]\n**Self-eval loops:** N\n**Time:** HH:MM:SS"
+}

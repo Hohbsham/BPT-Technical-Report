@@ -57,9 +57,58 @@
             border-radius: 50%;
             background-color: var(--accent);
         }
+        .dot.busy-dot {
+            background-color: var(--orange);
+            animation: pulse 1.5s infinite;
+        }
 
         .offline-dot {
             background-color: var(--red);
+            opacity: 0.5;
+        }
+
+        .status-badge {
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 8px;
+            margin-left: 4px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .status-badge.status-online { background: #1a3a2a; color: var(--accent); }
+        .status-badge.status-busy { background: #3a2e1a; color: var(--orange); }
+        .status-badge.status-offline { background: #3a1a1a; color: var(--red); }
+
+        .verified-badge {
+            display: inline-block;
+            width: 16px; height: 16px;
+            line-height: 16px; text-align: center;
+            font-size: 10px; font-weight: 700;
+            border-radius: 50%;
+            background: #1a3a2a; color: var(--accent);
+            border: 1px solid var(--accent);
+            cursor: help;
+        }
+        .unverified-badge {
+            display: inline-block;
+            width: 16px; height: 16px;
+            line-height: 16px; text-align: center;
+            font-size: 10px; font-weight: 700;
+            border-radius: 50%;
+            background: #3a2e1a; color: var(--orange);
+            border: 1px solid var(--orange);
+            cursor: help;
+        }
+
+        .agent-role {
+            font-size: 11px;
+            color: var(--secondary);
+            margin-top: 2px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
         }
 
         .section-title {
@@ -523,6 +572,42 @@
             border-radius: 4px;
             font-size: 13px;
         }
+
+        /* ── Quality Dashboard ── */
+        .score-badge {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .score-badge.score-good { background: #1a3a2a; color: #3fb950; }
+        .score-badge.score-ok { background: #3a2e1a; color: #d2991d; }
+        .score-badge.score-bad { background: #3a1a1a; color: #f85149; }
+
+        .quality-section { margin-top: 0; }
+        .quality-avg { font-size: 20px; font-weight: 700; color: var(--accent); }
+        .quality-avg.warn { color: var(--orange); }
+        .quality-meta { font-size: 11px; color: var(--secondary); margin-top: 2px; }
+
+        .dimension-bar-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+        .dimension-label { width: 100px; font-size: 11px; color: var(--secondary); text-align: right; }
+        .dimension-track { flex: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+        .dimension-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+        .dimension-score { width: 28px; font-size: 11px; text-align: right; }
+
+        .trend-sparkline { display: flex; gap: 2px; align-items: flex-end; height: 24px; }
+        .trend-bar { width: 4px; background: var(--accent); border-radius: 1px; min-height: 2px; opacity: 0.7; transition: height 0.3s; }
+        .trend-bar.declining { background: var(--red); }
+
+        .quality-modal { max-width: 600px; max-height: 80vh; overflow-y: auto; }
+        .quality-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .quality-tab { background: none; border: none; color: var(--secondary); padding: 4px 12px; cursor: pointer; font-size: 13px; border-radius: 4px; }
+        .quality-tab.active { color: var(--text); background: rgba(255,255,255,0.05); }
+        .eval-card { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin: 8px 0; font-size: 12px; }
+        .eval-card .eval-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .evidence-quote { color: var(--secondary); font-style: italic; border-left: 2px solid var(--border); padding-left: 8px; margin: 4px 0; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -549,6 +634,16 @@
             <div id="tasks-list">
                 <!-- Tasks will be populated here -->
             </div>
+        </div>
+
+        <div class="quality-section">
+            <div class="section-title">
+                <span>QUALITY</span>
+                <span class="badge" id="quality-badge" style="cursor:pointer" title="Open Quality Dashboard">0</span>
+            </div>
+            <div class="quality-avg" id="quality-avg">--</div>
+            <div class="quality-meta" id="quality-meta"></div>
+            <div id="quality-mini" style="margin-top: 6px;"></div>
         </div>
 
         <div class="stats-footer">
@@ -623,6 +718,33 @@
         </div>
     </div>
 
+    <!-- Quality Dashboard Modal -->
+    <div class="modal-overlay" id="quality-modal" style="display: none;">
+        <div class="modal-card quality-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Quality Dashboard</h2>
+                <button class="close-button" id="close-quality-modal">&times;</button>
+            </div>
+            <div class="quality-tabs">
+                <button class="quality-tab active" data-tab="overview">Overview</button>
+                <button class="quality-tab" data-tab="by-agent">By Agent</button>
+                <button class="quality-tab" data-tab="recent">Recent</button>
+            </div>
+            <div id="quality-tab-content"></div>
+        </div>
+    </div>
+
+    <!-- Task Result Modal -->
+    <div class="modal-overlay" id="result-modal" style="display: none;">
+        <div class="modal-card" style="max-width:700px;max-height:85vh;">
+            <div class="modal-header">
+                <h2 class="modal-title" id="result-title">Task Result</h2>
+                <button class="close-button" id="close-result-modal">&times;</button>
+            </div>
+            <div id="result-body" style="padding:16px;overflow-y:auto;max-height:60vh;"></div>
+        </div>
+    </div>
+
     <script>
         // Global state
         let messages = [];
@@ -657,6 +779,7 @@
             // Start polling
             pollMessages();
             pollAgents();
+            pollTasks();
             startUptimeCounter();
 
             // Event listeners
@@ -733,20 +856,22 @@
         messageInput.addEventListener('input', adjustTextareaHeight);
 
         function pollMessages() {
-            const since = lastMsgTs || new Date(Date.now() - 30000).toISOString(); // Last 30 seconds if no previous timestamp
-            
+            // Backend expects float epoch seconds, not ISO string
+            const since = lastMsgTs || (Date.now() / 1000 - 30);
+
             fetch(`/api/messages?since=${encodeURIComponent(since)}`)
                 .then(response => response.json())
                 .then(data => {
                     data.forEach(msg => {
-                        if (!messages.some(m => m.timestamp === msg.timestamp && m.sender === msg.sender && m.content === msg.content)) {
+                        // Backend uses 'ts' not 'timestamp'
+                        if (!messages.some(m => m.ts === msg.ts && m.sender === msg.sender && m.content === msg.content)) {
                             messages.push(msg);
                             renderMessage(msg);
                         }
                     });
-                    
+
                     if (data.length > 0) {
-                        lastMsgTs = data[data.length - 1].timestamp;
+                        lastMsgTs = data[data.length - 1].ts;
                     }
                     
                     trimMessages();
@@ -773,48 +898,91 @@
             setTimeout(pollAgents, 5000);
         }
 
+        function pollTasks() {
+            fetch('/api/tasks')
+                .then(response => response.json())
+                .then(data => {
+                    tasks = data;
+                    renderTasks();
+                })
+                .catch(error => console.error('Error fetching tasks:', error));
+
+            setTimeout(pollTasks, 5000);
+        }
+
         function renderAgents() {
             agentsList.innerHTML = '';
-            
-            agents.forEach(agent => {
+
+            // Sort: online → busy → offline
+            const statusOrder = { online: 0, busy: 1, offline: 2 };
+            const sorted = [...agents].sort((a, b) =>
+                (statusOrder[a.status] || 3) - (statusOrder[b.status] || 3));
+
+            sorted.forEach(agent => {
                 const agentEl = document.createElement('div');
                 agentEl.className = 'agent-item';
-                
+
+                const statusClass = agent.status === 'busy' ? 'busy-dot' :
+                                   agent.status === 'offline' ? 'offline-dot' : '';
+                const roleText = agent.role ? `<div class="agent-role">${agent.role}</div>` : '';
+                const caps = (agent.capabilities || []).slice(0, 3);
+
                 agentEl.innerHTML = `
-                    <div class="dot ${agent.status === 'offline' ? 'offline-dot' : ''}"></div>
+                    <div class="dot ${statusClass}"></div>
                     <div class="agent-info">
-                        <div class="agent-name">${agent.name}</div>
+                        <div class="agent-name">${agent.verified ? '<span class="verified-badge" title="Verified - has real tools">V</span>' : '<span class="unverified-badge" title="Unverified - AI text only">?</span>'} ${agent.name}</div>
+                        ${roleText}
                         <div class="capabilities">
-                            ${agent.capabilities.map(cap => `<span class="capability-pill">${cap}</span>`).join('')}
+                            ${caps.map(cap => `<span class="capability-pill">${cap}</span>`).join('')}
                         </div>
                     </div>
                 `;
-                
+
                 agentsList.appendChild(agentEl);
             });
 
             // Update stats
-            const onlineAgents = agents.filter(a => a.status === 'online').length;
+            const onlineAgents = agents.filter(a => a.status === 'online' || a.status === 'busy').length;
             onlineCount.textContent = onlineAgents;
         }
 
         function renderTasks() {
             tasksList.innerHTML = '';
-            
-            const activeTasks = tasks.filter(task => ['pending', 'in_progress'].includes(task.status));
-            
-            activeTasks.forEach(task => {
+
+            // Show all tasks: pending/claimed first, then completed
+            const statusOrder = { pending: 0, claimed: 1, working: 1, input_required: 2, completed: 3, failed: 3, cancelled: 4 };
+            const sorted = [...tasks].sort((a, b) => (statusOrder[a.status] || 5) - (statusOrder[b.status] || 5));
+
+            sorted.forEach(task => {
                 const taskEl = document.createElement('div');
                 taskEl.className = 'task-item';
-                
+                taskEl.title = 'Click to view details';
+
+                const statusIcon = {
+                    pending: '⏳', claimed: '🔧', working: '⚙️',
+                    completed: '✅', failed: '❌', cancelled: '🚫'
+                }[task.status] || '?';
+
+                const resultPreview = task.result
+                    ? `<div class="task-result-preview">${task.result.replace(/<[^>]*>/g, '').substring(0, 80)}...</div>`
+                    : (task.status === 'completed' ? '<div class="task-result-preview" style="color:var(--secondary)">Click to view result</div>' : '');
+
                 taskEl.innerHTML = `
                     <div class="task-header">
-                        <div class="task-title">${task.title}</div>
-                        <div class="status-indicator status-${task.status.replace('_', '-')}"></div>
+                        <div class="task-title">${statusIcon} ${task.title}</div>
+                        <div class="status-indicator status-${task.status.replace(/_/g, '-')}"></div>
                     </div>
-                    <div class="priority-badge priority-${task.priority}">${task.priority.toUpperCase()}</div>
+                    <div style="display:flex;gap:6px;align-items:center">
+                        <div class="priority-badge priority-${task.priority}">${task.priority.toUpperCase()}</div>
+                        ${task.claimed_by ? `<span style="font-size:11px;color:var(--secondary)">by ${task.claimed_by}</span>` : ''}
+                    </div>
+                    ${resultPreview}
                 `;
-                
+
+                // Click to view full result
+                taskEl.style.cursor = 'pointer';
+                taskEl.addEventListener('click', () => showTaskDetail(task));
+
                 tasksList.appendChild(taskEl);
             });
 
@@ -824,11 +992,32 @@
             pendingTasks.textContent = pending;
         }
 
+        function showTaskDetail(task) {
+            document.getElementById('result-title').textContent = task.title;
+            const body = document.getElementById('result-body');
+            const result = task.result || '(No result yet — task may still be in progress)';
+            const cleanResult = result
+                .replace(/<!--thinking-->[\\s\\S]*?<!--\/thinking-->/gi, '[Thinking block removed]')
+                .replace(/<[^>]*>/g, '');
+            body.innerHTML = `
+                <div style="margin-bottom:12px;display:flex;gap:16px;flex-wrap:wrap">
+                    <span><strong>Status:</strong> ${task.status}</span>
+                    <span><strong>Priority:</strong> ${task.priority}</span>
+                    <span><strong>Created:</strong> ${new Date((task.created_at||0) * 1000).toLocaleString()}</span>
+                    ${task.claimed_by ? `<span><strong>Claimed by:</strong> ${task.claimed_by}</span>` : ''}
+                    ${task.completed_by ? `<span><strong>Completed by:</strong> ${task.completed_by}</span>` : ''}
+                    ${task.assigned_to ? `<span><strong>Assigned to:</strong> ${task.assigned_to}</span>` : ''}
+                </div>
+                <div style="background:var(--card);padding:16px;border-radius:8px;max-height:400px;overflow-y:auto;white-space:pre-wrap;font-family:monospace;font-size:13px;line-height:1.5">${cleanResult}</div>
+            `;
+            document.getElementById('result-modal').style.display = 'flex';
+        }
+
         function renderMessage(message) {
             const messageEl = document.createElement('div');
             messageEl.className = `message-card ${getMessageClass(message.type)}`;
             
-            const timestamp = formatTimestamp(new Date(message.timestamp));
+            const timestamp = formatTimestamp(new Date((message.ts || 0) * 1000));
             
             let contentHtml = '';
             
@@ -990,69 +1179,156 @@
             }, 1000);
         }
 
-        // Simulate initial data for demo purposes
-        window.addEventListener('load', () => {
-            // Simulate some initial messages
-            messages = [
-                {
-                    type: 'system',
-                    sender: 'System',
-                    content: 'A2A Platform initialized',
-                    timestamp: new Date(Date.now() - 30000).toISOString()
-                },
-                {
-                    type: 'agent_register',
-                    sender: 'System',
-                    agent: 'DataProcessorAgent',
-                    timestamp: new Date(Date.now() - 25000).toISOString()
-                },
-                {
-                    type: 'task_create',
-                    sender: 'Admin',
-                    title: 'Process quarterly reports',
-                    description: 'Analyze sales data and generate summary report',
-                    capabilities: ['data_processing', 'reporting'],
-                    priority: 'high',
-                    timestamp: new Date(Date.now() - 20000).toISOString()
-                },
-                {
-                    type: 'task_claim',
-                    sender: 'System',
-                    agent: 'DataProcessorAgent',
-                    timestamp: new Date(Date.now() - 15000).toISOString()
-                },
-                {
-                    type: 'chat',
-                    sender: 'User1',
-                    content: 'How is the report generation going?',
-                    timestamp: new Date(Date.now() - 10000).toISOString()
-                },
-                {
-                    type: 'task_complete',
-                    sender: 'System',
-                    result: 'Report generated successfully with 95% accuracy',
-                    timestamp: new Date(Date.now() - 5000).toISOString()
-                }
-            ];
+        // Initial data is fetched from the API — no hardcoded demo data
 
-            messages.forEach(msg => renderMessage(msg));
-            scrollToBottom();
+        // ── Quality Dashboard ──
+        const qualityBadge = document.getElementById('quality-badge');
+        const qualityAvg = document.getElementById('quality-avg');
+        const qualityMeta = document.getElementById('quality-meta');
+        const qualityMini = document.getElementById('quality-mini');
+        const qualityModal = document.getElementById('quality-modal');
+        const closeQualityModal = document.getElementById('close-quality-modal');
+        const qualityTabContent = document.getElementById('quality-tab-content');
 
-            // Simulate initial agents
-            agents = [
-                { name: 'DataProcessorAgent', status: 'online', capabilities: ['data_processing', 'analysis'] },
-                { name: 'ReportGeneratorAgent', status: 'online', capabilities: ['reporting', 'visualization'] },
-                { name: 'NotificationAgent', status: 'offline', capabilities: ['notifications', 'alerts'] }
-            ];
-            renderAgents();
-
-            // Simulate initial tasks
-            tasks = [
-                { title: 'Process quarterly reports', status: 'completed', priority: 'high' },
-                { title: 'Send notifications', status: 'pending', priority: 'normal' }
-            ];
-            renderTasks();
+        qualityBadge.addEventListener('click', () => {
+            qualityModal.style.display = 'flex';
+            loadQualityTab('overview');
         });
+        closeQualityModal.addEventListener('click', () => qualityModal.style.display = 'none');
+        qualityModal.addEventListener('click', (e) => {
+            if (e.target === qualityModal) qualityModal.style.display = 'none';
+        });
+
+        const resultModal = document.getElementById('result-modal');
+        document.getElementById('close-result-modal').addEventListener('click', () => resultModal.style.display = 'none');
+        resultModal.addEventListener('click', (e) => {
+            if (e.target === resultModal) resultModal.style.display = 'none';
+        });
+
+        async function fetchQuality(endpoint) {
+            try {
+                const res = await fetch(endpoint);
+                return res.ok ? await res.json() : null;
+            } catch (e) { return null; }
+        }
+
+        async function loadQualityTab(tab) {
+            if (tab === 'overview') {
+                const data = await fetchQuality('/api/evaluations/summary');
+                if (!data || !data.total_evaluations) {
+                    qualityTabContent.innerHTML = '<p style="color:var(--secondary)">No evaluations yet. Complete some tasks to generate quality data.</p>';
+                    return;
+                }
+                let html = `<div class="quality-avg" style="margin-bottom:8px;">${data.platform_avg}/5.0</div>`;
+                html += `<div class="quality-meta" style="margin-bottom:12px;">${data.total_evaluations} total evaluations</div>`;
+                for (const [domain, info] of Object.entries(data.domains || {})) {
+                    html += `<div class="dimension-bar-row">
+                        <span class="dimension-label">${domain}</span>
+                        <div class="dimension-track"><div class="dimension-fill" style="width:${info.avg*20}%;background:var(--blue);"></div></div>
+                        <span class="dimension-score">${info.avg}/5</span>
+                    </div>`;
+                }
+                qualityTabContent.innerHTML = html;
+            } else if (tab === 'by-agent') {
+                const agents = await fetchQuality('/api/agents');
+                if (!agents || !agents.length) {
+                    qualityTabContent.innerHTML = '<p style="color:var(--secondary)">No agents online.</p>';
+                    return;
+                }
+                let html = '';
+                for (const a of agents.filter(a => a.status !== 'offline').slice(0, 8)) {
+                    const evals = await fetchQuality(`/api/evaluations?agent_id=${a.agent_id}&limit=5`);
+                    const scores = (evals || []).map(e => e.scores?.overall || 0);
+                    const avg = scores.length ? (scores.reduce((c,s) => c+s, 0)/scores.length).toFixed(1) : '--';
+                    const cls = avg >= 4 ? 'score-good' : avg >= 3 ? 'score-ok' : 'score-bad';
+                    html += `<div class="eval-card">
+                        <div class="eval-header"><strong>${a.name}</strong> <span class="score-badge ${cls}">${avg}/5</span></div>
+                        <div class="quality-meta">${a.role || ''} · ${scores.length} evals</div>
+                    </div>`;
+                }
+                qualityTabContent.innerHTML = html || '<p style="color:var(--secondary)">No data.</p>';
+            } else if (tab === 'recent') {
+                const data = await fetchQuality('/api/evaluations?limit=20');
+                if (!data || !data.length) {
+                    qualityTabContent.innerHTML = '<p style="color:var(--secondary)">No evaluations yet.</p>';
+                    return;
+                }
+                let html = '';
+                for (const e of data.slice(0, 15)) {
+                    const score = e.scores?.overall || 0;
+                    const cls = score >= 4 ? 'score-good' : score >= 3 ? 'score-ok' : 'score-bad';
+                    html += `<div class="eval-card">
+                        <div class="eval-header"><strong>${e.agent_name}</strong> <span class="score-badge ${cls}">${score}/5</span></div>
+                        <div style="margin-bottom:4px;">${e.task_title?.substring(0,60) || '?'}</div>`;
+                    if (e.strengths?.length) html += `<div style="color:var(--accent);font-size:11px;">+ ${e.strengths[0]}</div>`;
+                    if (e.suggestions?.length) html += `<div style="color:var(--blue);font-size:11px;">→ ${e.suggestions[0]}</div>`;
+                    html += `<div class="quality-meta">${e.domain} · ${new Date(e.timestamp*1000).toLocaleTimeString()}</div></div>`;
+                }
+                qualityTabContent.innerHTML = html || '<p style="color:var(--secondary)">No data.</p>';
+            }
+        }
+
+        async function pollQuality() {
+            try {
+                const data = await fetchQuality('/api/evaluations/summary');
+                if (!data || !data.total_evaluations) return;
+                qualityBadge.textContent = data.total_evaluations;
+                qualityAvg.textContent = data.platform_avg + '/5';
+                qualityAvg.className = 'quality-avg' + (data.platform_avg < 3 ? ' warn' : '');
+
+                // Mini sparkline of recent scores
+                const recent = await fetchQuality('/api/evaluations?limit=10');
+                if (recent && recent.length) {
+                    const scores = recent.map(e => e.scores?.overall || 0).reverse();
+                    const maxS = 5;
+                    let spark = '<div class="trend-sparkline">';
+                    for (const s of scores) {
+                        const h = Math.max(2, (s / maxS) * 24);
+                        const cls = s < 3 ? 'declining' : '';
+                        spark += `<div class="trend-bar ${cls}" style="height:${h}px;" title="${s}/5"></div>`;
+                    }
+                    spark += '</div>';
+                    qualityMini.innerHTML = spark;
+                    qualityMeta.textContent = `${data.total_evaluations} evals across ${Object.keys(data.domains||{}).length} domains`;
+                }
+            } catch (e) { /* quality is best-effort */ }
+        }
+
+        setInterval(pollQuality, 15000);
+        setTimeout(pollQuality, 3000);
+
+        // Modify renderMessage to show score badge on task_complete messages
+        const origRenderMessage = renderMessage;
+        renderMessage = function(msg) {
+            origRenderMessage(msg);
+            // Add score badge to task_complete messages
+            if (msg.type === 'task_complete' && msg.meta?.task_id) {
+                const cards = messageStream.querySelectorAll('.message-card');
+                for (const card of cards) {
+                    if (card.querySelector('.score-badge-inline')) continue;
+                    const metaStr = JSON.stringify(msg.meta || {});
+                    if (metaStr.includes(msg.meta.task_id)) {
+                        // Check for evaluation
+                        setTimeout(async () => {
+                            try {
+                                const evals = await fetchQuality(`/api/evaluations?task_id=${msg.meta.task_id}&limit=1`);
+                                if (evals && evals.length && evals[0].scores?.overall) {
+                                    const score = evals[0].scores.overall;
+                                    const cls = score >= 4 ? 'score-good' : score >= 3 ? 'score-ok' : 'score-bad';
+                                    const badge = document.createElement('span');
+                                    badge.className = `score-badge ${cls} score-badge-inline`;
+                                    badge.textContent = `${score}/5`;
+                                    badge.style.cssText = 'margin-left:8px;';
+                                    badge.title = evals[0].suggestions?.join('\\n') || '';
+                                    card.querySelector('.sender')?.appendChild(badge);
+                                }
+                            } catch (e) {}
+                        }, 2000);
+                        break;
+                    }
+                }
+            }
+        };
     </script>
 </body>
 </html>

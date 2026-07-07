@@ -73,7 +73,64 @@ def _apply_claude_config(config, args):
         args.capabilities = config["agent_caps"]
     if config.get("agent_model") and not getattr(args, 'model', ''):
         args.model = config["agent_model"]
-WS_HOST = os.environ.get("CHAT_WS", "ws://localhost:8765/ws")
+WS_HOST = os.environ.get("CHAT_WS", "ws://localhost:8766")  # v3: HTTP:8765 + WS:8766
+
+# ── WebSocket push listener (runs in background thread) ──────────
+
+def _start_ws_listener(agent_id, caps, on_task_available):
+    """
+    Connect to server via WebSocket. When server pushes a task_available,
+    call on_task_available(claim_result) in the main thread.
+    Returns a stop function.
+    """
+    import threading, asyncio
+    running = [True]
+
+    async def _listen():
+        try:
+            import websockets
+        except ImportError:
+            return  # websockets not installed, skip
+
+        ws_url = WS_HOST
+        backoff = 2
+        while running[0]:
+            try:
+                async with websockets.connect(ws_url) as ws:
+                    # Register for push
+                    await ws.send(json.dumps({
+                        "type": "agent_connect",
+                        "agent_id": agent_id,
+                    }))
+                    # Send initial heartbeat
+                    await ws.send(json.dumps({"type": "agent_heartbeat"}))
+
+                    # Listen for push + send heartbeat every 30s
+                    last_hb = time.time()
+                    while running[0]:
+                        try:
+                            msg = await asyncio.wait_for(ws.recv(), timeout=30)
+                            data = json.loads(msg)
+                            if data.get("type") == "task_available":
+                                on_task_available(data.get("task", {}))
+                            elif data.get("type") == "pong":
+                                pass
+                        except asyncio.TimeoutError:
+                            if time.time() - last_hb > 25:
+                                await ws.send(json.dumps({"type": "agent_heartbeat"}))
+                                last_hb = time.time()
+            except Exception:
+                if running[0]:
+                    await asyncio.sleep(backoff)
+                    backoff = min(backoff * 2, 30)
+
+    def _run():
+        asyncio.run(_listen())
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+    return lambda: running.__setitem__(0, False)  # stop function
+
 
 # ── HTTP helpers ────────────────────────────────────────────────
 
@@ -107,7 +164,7 @@ def save_agent_id(agent_id):
 
 # ── AI Model config ─────────────────────────────────────────────
 
-_AI_CONFIG = None
+from ai_config import get_config as _load_ai_config
 
 def _load_agent_prompt(agent_name):
     """Load system prompt from learning_agents.json for interview prep agents."""
@@ -127,39 +184,6 @@ def _load_agent_prompt(agent_name):
     except Exception:
         pass
     return None
-
-def _load_ai_config():
-    global _AI_CONFIG
-    if _AI_CONFIG is not None:
-        return _AI_CONFIG
-    _AI_CONFIG = {"api_key": None, "base_url": None, "model": None}
-    for p in [
-        os.path.expanduser("~/.openclaw/openclaw.json"),
-        os.path.expanduser("~/.config/openclaw/openclaw.json"),
-    ]:
-        if os.path.exists(p):
-            try:
-                with open(p, "r", encoding="utf-8") as f:
-                    cfg = json.load(f)
-                agents_cfg = cfg.get("agents", {}).get("defaults", {})
-                model_str = agents_cfg.get("model", "")
-                provider = model_str.split("/")[0] if "/" in model_str else "deepseek"
-                model_id = model_str.split("/")[1] if "/" in model_str else model_str
-                providers = cfg.get("models", {}).get("providers", {})
-                if provider in providers:
-                    pcfg = providers[provider]
-                    _AI_CONFIG["base_url"] = pcfg.get("baseUrl", "")
-                    _AI_CONFIG["api_key"] = pcfg.get("apiKey", "")
-                    _AI_CONFIG["model"] = model_str
-                break
-            except Exception:
-                pass
-    for key in ["AI_API_KEY", "AI_BASE_URL", "AI_MODEL"]:
-        env_key = key
-        cfg_key = key.replace("AI_", "").lower()
-        if os.environ.get(env_key):
-            _AI_CONFIG[cfg_key] = os.environ[env_key]
-    return _AI_CONFIG
 
 def call_ai(task_title, task_desc, agent_name, role, goal, backstory, capabilities, context_results=None):
     """Call AI model to answer a task, using agent identity for personalization."""
@@ -198,7 +222,7 @@ INSTRUCTIONS:
 - Answer the task directly and helpfully.
 - Keep your response concise and structured.
 - If this is a status report, confirm you are operational and state your capabilities.
-{SYSTEM_PROMPT_INJECT}"""
+{{SYSTEM_PROMPT_INJECT}}"""
 
     # Inject system prompt from learning_agents.json if available
     if system_prompt:
@@ -303,11 +327,28 @@ def cmd_auto(args):
         "agent_id": agent_id, "name": args.name,
         "role": role, "goal": goal, "backstory": backstory,
         "capabilities": caps, "model": args.model or "",
+        "verified": False, "source": "generic",
     })
     identity = role or args.name
     mode_str = "auto-reply" if auto_reply else "interactive"
     safe_print(f"[REGISTERED] {identity} ({agent_id})")
-    safe_print(f"[AUTO:{mode_str}] Polling every {interval}s. Ctrl+C to stop.\n")
+    safe_print(f"[AUTO:{mode_str}] Polling every {interval}s + WebSocket push. Ctrl+C to stop.\n")
+
+    # Start WebSocket listener for push notifications (v3 "waiter")
+    _ws_stop = _start_ws_listener(agent_id, caps, lambda task: None)  # triggers heartbeat
+
+    # Background heartbeat thread — keeps agent alive during long AI calls
+    def _bg_heartbeat():
+        while running:
+            time.sleep(30)
+            if running:
+                try:
+                    api_post("/api/agents/heartbeat", {"agent_id": agent_id})
+                except Exception:
+                    pass
+    import threading
+    hb_thread = threading.Thread(target=_bg_heartbeat, daemon=True)
+    hb_thread.start()
 
     running = True
     while running:
@@ -560,12 +601,6 @@ def spawn_agent(name, caps, role, goal, backstory, poll_interval=10):
         return True, proc.pid
     except Exception as e:
         return False, str(e)
-    """Load specialist registry from agent_registry.json."""
-    for p in [os.path.join(BASE_DIR, "agent_registry.json"), "agent_registry.json"]:
-        if os.path.exists(p):
-            with open(p, "r", encoding="utf-8") as f:
-                return json.load(f)
-    return {"specialists": []}
 
 def cmd_manager(args):
     """Manager agent: listens to user, dispatches tasks to specialists."""
@@ -586,6 +621,7 @@ def cmd_manager(args):
         "agent_id": agent_id, "name": args.name,
         "role": role, "goal": goal, "backstory": backstory,
         "capabilities": caps, "model": args.model or "",
+        "verified": False, "source": "generic",
     })
     safe_print(f"[MANAGER] {args.name} online — {len(registry['specialists'])} specialists known")
 
@@ -825,6 +861,20 @@ if __name__ == "__main__":
 
     sp.add_parser("listen", help="Listen for messages continuously")
 
+    # quality evaluation
+    sp_eval = sp.add_parser("eval", help="Evaluate a completed task's output quality")
+    sp_eval.add_argument("--task-id", required=True, help="Task ID to evaluate")
+    sp_eval.add_argument("--agent-id", default=None, help="Agent ID (auto-detected)")
+
+    sp_qual = sp.add_parser("quality", help="View quality reports")
+    sp_qual.add_argument("--agent", default=None, help="Filter by agent name")
+    sp_qual.add_argument("--domain", default=None, help="Filter by domain")
+    sp_qual.add_argument("--trend", action="store_true", help="Show trend analysis")
+    sp_qual.add_argument("--pass-at-k", type=int, default=0, help="Calculate pass@k")
+
+    sp_cal = sp.add_parser("calibrate", help="Calibrate LLM Judge against golden set")
+    sp_cal.add_argument("--golden-set", required=True, help="Path to golden set JSON")
+
     args = p.parse_args()
 
     if args.cmd == "register":
@@ -843,5 +893,19 @@ if __name__ == "__main__":
         cmd_read(args)
     elif args.cmd == "listen":
         cmd_listen(args)
+    elif args.cmd == "eval":
+        from quality_evaluator import cmd_eval
+        cmd_eval(args)
+    elif args.cmd == "quality":
+        from eval_reports import print_agent_report, print_domain_report, print_platform_report
+        if args.agent:
+            print_agent_report(args.agent)
+        elif args.domain:
+            print_domain_report(args.domain)
+        else:
+            print_platform_report()
+    elif args.cmd == "calibrate":
+        from quality_evaluator import cmd_calibrate
+        cmd_calibrate(args)
     else:
         p.print_help()

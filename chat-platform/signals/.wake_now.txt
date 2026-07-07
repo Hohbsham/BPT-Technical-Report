@@ -1,0 +1,3 @@
+2026-07-07T07:19:49.245Z
+TASK: WAKE v2: Win32 direct foreground + hook trigger
+ID: task-388b546d

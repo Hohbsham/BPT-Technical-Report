@@ -1,7 +1,7 @@
 """Launcher: spawns server + agents as truly independent Windows processes."""
 import subprocess, sys, os, time
 
-PYTHON = r"C:\Users\YANGZ\AppData\Local\Programs\Python\Python311\python.exe"
+PYTHON = sys.executable
 BASE = os.path.dirname(os.path.abspath(__file__))
 
 DETACH = 0x00000008  # DETACHED_PROCESS

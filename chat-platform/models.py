@@ -2,13 +2,20 @@
 Data models for A2A Chat Platform v2.
 Agent identity (CrewAI-inspired) + Task state machine (A2A-inspired).
 """
-import json, os, time, uuid
+import json, os, time, uuid, threading
 from dataclasses import dataclass, field, asdict
 from typing import Optional
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ── Persistence helpers ──────────────────────────────────────────
+
+_save_locks = {}  # path → Lock for per-file thread safety
+
+def _get_lock(path):
+    if path not in _save_locks:
+        _save_locks[path] = threading.Lock()
+    return _save_locks[path]
 
 def _load(path, default):
     if not os.path.exists(path):
@@ -17,11 +24,21 @@ def _load(path, default):
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, FileNotFoundError):
+        # Auto-backup corrupted file
+        corrupted = path + ".corrupted." + time.strftime("%Y%m%d_%H%M%S")
+        try:
+            os.rename(path, corrupted)
+        except Exception:
+            pass
         return default
 
 def _save(path, data):
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    """Atomic write: tmp file → os.replace. Guarantees no corruption."""
+    tmp = path + ".tmp"
+    with _get_lock(path):
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, path)
 
 # ── Agent Model (CrewAI-inspired identity) ──────────────────────
 
@@ -303,3 +320,132 @@ class MessageStore:
             if isinstance(meta, dict) and meta.get("task_id") == task_id:
                 related.append(m)
         return sorted(related, key=lambda m: m.get("ts", 0))
+
+
+# ── Evaluation Model (QualityEvaluator) ────────────────────────────
+
+@dataclass
+class Evaluation:
+    eval_id: str
+    task_id: str
+    agent_id: str
+    agent_name: str = ""
+    agent_role: str = ""
+    domain: str = ""            # code_review | paper_review | interview_learning | bpt_training | generic
+    task_title: str = ""
+    timestamp: float = 0.0
+    scores: dict = field(default_factory=dict)       # {"overall": 4.2, "dimensions": {...}}
+    evidence: list = field(default_factory=list)     # [{"dimension": str, "quote": str}]
+    suggestions: list = field(default_factory=list)  # ["suggestion 1", ...]
+    strengths: list = field(default_factory=list)    # ["strength 1", ...]
+    weaknesses: list = field(default_factory=list)   # ["weakness 1", ...]
+    confidence: float = 0.0
+    flags: list = field(default_factory=list)        # ["low_confidence", "dimension_masked", "self_eval", ...]
+    stage1_checks: dict = field(default_factory=dict)
+    judge_raw: str = ""          # raw LLM judge response for audit
+
+    def to_dict(self):
+        return asdict(self)
+
+    @staticmethod
+    def from_dict(d):
+        return Evaluation(**{k: d.get(k) for k in Evaluation.__dataclass_fields__.keys() if k in d})
+
+
+class EvalStore:
+    MAX_RECORDS = 500
+
+    def __init__(self, path=None):
+        self.path = path or os.path.join(BASE_DIR, "eval_store.json")
+
+    def all(self, since=0):
+        records = _load(self.path, [])
+        if since:
+            records = [r for r in records if r.get("timestamp", 0) > since]
+        return [Evaluation.from_dict(r) for r in records]
+
+    def find(self, eval_id):
+        for e in self.all():
+            if e.eval_id == eval_id:
+                return e
+        return None
+
+    def append(self, evaluation):
+        records = _load(self.path, [])
+        records.append(evaluation.to_dict())
+        _save(self.path, records[-self.MAX_RECORDS:])
+        return evaluation
+
+    def query(self, agent_id=None, agent_name=None, domain=None, limit=50):
+        results = []
+        for e in self.all():
+            if agent_id and e.agent_id != agent_id:
+                continue
+            if agent_name and e.agent_name != agent_name:
+                continue
+            if domain and e.domain != domain:
+                continue
+            results.append(e)
+            if len(results) >= limit:
+                break
+        return results
+
+    def agent_history(self, agent_id, limit=50):
+        return self.query(agent_id=agent_id, limit=limit)
+
+    def agent_stats(self, agent_id):
+        evals = self.agent_history(agent_id, limit=100)
+        if not evals:
+            return {"count": 0, "avg_overall": 0, "dimensions": {}, "trend": "no data"}
+        scores = [e.scores.get("overall", 0) for e in evals]
+        dims = {}
+        for e in evals:
+            for dname, dscore in e.scores.get("dimensions", {}).items():
+                dims.setdefault(dname, []).append(dscore)
+        avg_dim = {k: round(sum(v)/len(v), 2) for k, v in dims.items()}
+        # Trend: compare first half vs second half
+        mid = len(scores) // 2
+        first_half = sum(scores[:mid])/mid if mid > 0 else scores[0] if scores else 0
+        second_half = sum(scores[mid:])/(len(scores)-mid) if len(scores)-mid > 0 else first_half
+        if second_half > first_half + 0.1:
+            trend = "improving"
+        elif second_half < first_half - 0.1:
+            trend = "declining"
+        else:
+            trend = "stable"
+        return {
+            "count": len(evals),
+            "avg_overall": round(sum(scores)/len(scores), 2),
+            "dimensions": avg_dim,
+            "trend": trend,
+            "first_half_avg": round(first_half, 2),
+            "second_half_avg": round(second_half, 2),
+        }
+
+    def domain_stats(self, domain):
+        evals = self.query(domain=domain, limit=200)
+        if not evals:
+            return {"count": 0}
+        scores = [e.scores.get("overall", 0) for e in evals]
+        agents = set(e.agent_name for e in evals)
+        return {
+            "count": len(evals),
+            "avg_overall": round(sum(scores)/len(scores), 2),
+            "agents_evaluated": len(agents),
+        }
+
+    def platform_overview(self):
+        evals = self.all()
+        if not evals:
+            return {"total_evaluations": 0}
+        scores = [e.scores.get("overall", 0) for e in evals if e.scores.get("overall")]
+        domains = {}
+        for e in evals:
+            d = e.domain or "generic"
+            domains.setdefault(d, []).append(e.scores.get("overall", 0))
+        domain_summary = {d: {"count": len(s), "avg": round(sum(s)/len(s), 2)} for d, s in domains.items()}
+        return {
+            "total_evaluations": len(evals),
+            "platform_avg": round(sum(scores)/len(scores), 2) if scores else 0,
+            "domains": domain_summary,
+        }

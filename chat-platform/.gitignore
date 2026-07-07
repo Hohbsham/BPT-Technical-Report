@@ -25,3 +25,10 @@ Thumbs.db
 *.tmp
 .env
 *.log
+node_modules/
+signals/
+.public_url
+*.json
+!agent_windows.json
+!capability_registry.json
+!agent_registry.json

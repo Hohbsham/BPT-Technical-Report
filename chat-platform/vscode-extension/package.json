@@ -1,0 +1,22 @@
+{
+  "name": "a2a-task-watcher",
+  "displayName": "A2A Task Watcher",
+  "description": "Internal bridge: A2A inbox -> VSCode notification -> Claude wake-up. Host-injected context fusion.",
+  "version": "1.0.0",
+  "publisher": "a2a-platform",
+  "engines": { "vscode": "^1.80.0" },
+  "activationEvents": [ "onStartupFinished" ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "a2a-task-watcher.checkInbox",
+        "title": "A2A: Check inbox now"
+      },
+      {
+        "command": "a2a-task-watcher.injectLastTask",
+        "title": "A2A: Inject last task into Claude"
+      }
+    ]
+  }
+}

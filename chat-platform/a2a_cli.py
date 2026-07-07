@@ -123,6 +123,12 @@ if __name__ == "__main__":
     sp_chat.add_argument("--sender", required=True)
     sp_chat.add_argument("--msg", required=True)
 
+    sp_health = sp.add_parser("health", help="Show platform health")
+
+    sp_send = sp.add_parser("send", help="Send chat message (alias for chat)")
+    sp_send.add_argument("--name", required=True)
+    sp_send.add_argument("--msg", required=True)
+
     sp.add_parser("cleanup")
 
     args = p.parse_args()
@@ -134,7 +140,16 @@ if __name__ == "__main__":
         cmd_create(args)
     elif args.cmd == "result":
         cmd_result(args)
+    elif args.cmd == "health":
+        r = get("/api/health")
+        print(f"Platform: {'OK' if r.get('ok') else 'ERROR'}")
+        print(f"Uptime: {r.get('uptime',0)}s")
+        print(f"Agents: {r.get('agents_online',0)}/{r.get('agents_total',0)} online")
+        print(f"Tasks: {r.get('tasks_pending',0)} pending / {r.get('tasks_total',0)} total")
+        print(f"DB: {r.get('db_size_kb',0)}kb")
     elif args.cmd == "chat":
+        cmd_chat(args)
+    elif args.cmd == "send":
         cmd_chat(args)
     elif args.cmd == "cleanup":
         cmd_cleanup(args)

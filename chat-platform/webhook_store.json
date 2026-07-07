@@ -1,0 +1,56 @@
+{
+  "task-d68bd774": {
+    "task_id": "task-d68bd774",
+    "title": "Platform Audit: verify all 3 agents are producing real output",
+    "agent": "QualityEvaluator",
+    "status": "pending",
+    "claimed_by": null,
+    "claimed_at": 0,
+    "created_at": 1783387376.7865472
+  },
+  "task-a2530323": {
+    "task_id": "task-a2530323",
+    "title": "CHANNEL TEST: do you see this message in the window?",
+    "agent": "QualityEvaluator",
+    "status": "pending",
+    "claimed_by": null,
+    "claimed_at": 0,
+    "created_at": 1783388511.1126618
+  },
+  "task-d6c6034d": {
+    "task_id": "task-d6c6034d",
+    "title": "Hook Test: QualityEvaluator auto-check",
+    "agent": "QualityEvaluator",
+    "status": "pending",
+    "claimed_by": null,
+    "claimed_at": 0,
+    "created_at": 1783389640.8941646
+  },
+  "task-96821788": {
+    "task_id": "task-96821788",
+    "title": "\u8865\u4e01A\u6d4b\u8bd5: Channel\u76f4\u5199\u4fe1\u53f7",
+    "agent": "QualityEvaluator",
+    "status": "pending",
+    "claimed_by": null,
+    "claimed_at": 0,
+    "created_at": 1783390947.0052114
+  },
+  "task-63afe9ef": {
+    "task_id": "task-63afe9ef",
+    "title": "[Orchestrated] Design architecture and implementation plan",
+    "agent": "Claude",
+    "status": "pending",
+    "claimed_by": null,
+    "claimed_at": 0,
+    "created_at": 1783391496.1558936
+  },
+  "task-ec509c39": {
+    "task_id": "task-ec509c39",
+    "title": "[Orchestrated] Design architecture and implementation plan",
+    "agent": "Claude",
+    "status": "pending",
+    "claimed_by": null,
+    "claimed_at": 0,
+    "created_at": 1783415103.4136717
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "skill_id": "bpt_empty_output_fix",
+  "name": "BPT Empty Output Detection & Fix",
+  "version": "1.0",
+  "author": "QualityEvaluator (Claude本人)",
+  "trigger": {
+    "keywords": ["training", "BPT", "report", "metrics", "inspect"],
+    "capability_match": ["quality_evaluation", "training_monitor"],
+    "failure_patterns": ["- Training status: (empty)", "E503:Empty"]
+  },
+  "pre_context": "When evaluating BPT training reports, check if the output contains actual metrics (loss, accuracy, epoch, GPU utilization) or if it's just a placeholder. BPTtrain has a known failure mode: producing '- Training status:' with nothing after it. This is E503: Empty output.",
+  "inspection_steps": [
+    "1. Read the agent output — is there actual data or just a placeholder?",
+    "2. If output < 20 chars → E503: Empty output (score 0.5/5)",
+    "3. If output has <!--thinking--> but < 50c content → E501: Thin output",
+    "4. Check if the same output has appeared 3+ times → STUCK detection",
+    "5. Suggest: check AI config, upgrade to tooled agent, or downgrade capabilities"
+  ],
+  "scoring_matrix": {
+    "empty_output": 0.5,
+    "thin_output": 2.0,
+    "clean_output_with_metrics": 4.5
+  },
+  "remediation": {
+    "immediate": "Mark agent output as E503. Flag agent for review.",
+    "long_term": "Check API key validity. Upgrade agent to tooled or remove training_monitor capability."
+  }
+}

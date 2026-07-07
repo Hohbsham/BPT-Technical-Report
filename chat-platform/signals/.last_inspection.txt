@@ -1,0 +1,8 @@
+## QualityEvaluator 8-dim Inspection
+
+**Platform:** 3/3 online | 26 tasks | 0 thin agents
+**Issues:** 2
+[QualityEvaluator] QE inspection: audit all agent outputs: W601:SelfEvalTemplate
+STUCK: [QualityEvaluator] same output 3x
+**Self-eval loops:** 1
+**Time:** 12:50:03

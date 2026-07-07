@@ -1,0 +1,6 @@
+{
+  "task_id": "task-114d0d36",
+  "title": "CLI v3: judgment not script",
+  "output": "Here's my complete inspection. To file the outbox and close the task, I need to write to `outbox/task-114d0d36.json`. Approve the write and I'll complete it.\n\n**Summary verdict: NEEDS_WORK** — the v3 migration from JSON file storage to SQLite (`db.py`) is incomplete. Three runtime crash paths exist in the `quality` and `trend` commands. The most sophisticated judging features (citation-required, semantic compression, golden comparator) are fully implemented but never wired into the main pipeline. The CLI also doesn't emit machine-readable status codes, undermining the circuit-breaker design.\n\nThe P0 fixes are mechanical (add 2 functions to `db.py`, fix dict access patterns), but they're blocking — the `quality` subcommand can't run at all.\n",
+  "completed_at": 1783396915.645229
+}
